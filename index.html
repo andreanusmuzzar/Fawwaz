@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PESAN</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        :root {
+            --primary-pink: #ff6b81;
+            --light-pink: #ffe0e6;
+            --bg-color: #fff0f3;
+            --text-dark: #4a4a4a;
+            --white: #ffffff;
+            --error-red: #ff4757;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* Mencegah scroll saat tombol kabur atau main game */
+            position: relative;
+        }
+
+        .card {
+            background-color: var(--white);
+            padding: 40px 30px;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(255, 107, 129, 0.15);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            z-index: 10;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            font-family: 'Pacifico', cursive;
+            color: var(--primary-pink);
+            font-size: 2.2rem;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(255, 107, 129, 0.1);
+        }
+
+        p.message {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            color: #666;
+        }
+
+        .screen {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            transform: translateY(20px);
+            width: 100%;
+        }
+
+        .screen.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .pin-input {
+            width: 100%;
+            max-width: 250px;
+            padding: 12px 20px;
+            font-size: 1.2rem;
+            text-align: center;
+            border: 2px solid var(--light-pink);
+            border-radius: 50px;
+            margin-bottom: 10px;
+            font-family: 'Quicksand', sans-serif;
+            outline: none;
+            transition: border-color 0.3s;
+            letter-spacing: 2px;
+        }
+
+        .pin-input:focus {
+            border-color: var(--primary-pink);
+        }
+
+        .error-msg {
+            color: var(--error-red);
+            font-size: 0.9rem;
+            min-height: 20px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .buttons-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            position: relative;
+            min-height: 50px;
+            width: 100%;
+        }
+
+        button {
+            font-family: 'Quicksand', sans-serif;
+            font-weight: 600;
+            font-size: 1rem;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+            outline: none;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-pink);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 129, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(255, 107, 129, 0.6);
+        }
+
+        .btn-no {
+            background-color: #e0e0e0;
+            color: #666;
+            position: relative;
+            z-index: 50;
+        }
+
+        .gif-container img {
+            width: 150px;
+            height: 150px;
+            object-fit: contain;
+            margin-bottom: 15px;
+            border-radius: 15px;
+        }
+
+        .long-letter {
+            font-size: 1.05rem;
+            text-align: left;
+            background: var(--bg-color);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--primary-pink);
+            max-height: 300px;
+            overflow-y: auto;
+            color: var(--text-dark);
+            line-height: 1.7;
+        }
+
+        /* Game Screen Styles */
+        #game-area {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 100;
+            display: none;
+        }
+
+        #game-area.active {
+            display: block;
+            pointer-events: auto; /* Bisa diklik saat game aktif */
+        }
+
+        .game-ui {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(255, 107, 129, 0.3);
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: var(--primary-pink);
+            z-index: 101;
+        }
+
+        .game-heart {
+            position: absolute;
+            font-size: 40px;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.1s;
+            animation: pulse 1s infinite alternate;
+        }
+
+        .game-heart:active {
+            transform: scale(0.8);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1); }
+        }
+
+        .falling-heart {
+            position: absolute;
+            top: -50px;
+            font-size: 24px;
+            color: var(--primary-pink);
+            opacity: 0.8;
+            animation: fallDown 5s linear infinite;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        @keyframes fallDown {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Area untuk hujan hati background (Screen 5) -->
+    <div id="hearts-container"></div>
+
+    <!-- Area untuk Mini Game (Screen 4) -->
+    <div id="game-area">
+        <div class="game-ui">Hati yang terkumpul: <span id="score">0</span> / 10</div>
+        <!-- Hati game akan di-spawn di sini oleh JS -->
+    </div>
+
+    <div class="card" id="main-card">
+        
+        <!-- Screen 1: PIN Input -->
+        <div id="screen-1" class="screen active">
+            <div class="gif-container">
+                <img src="https://media.tenor.com/Fh2H3U7QpIQAAAAj/tkthao219-bubududu.gif" alt="Cute bear waiting">
+            </div>
+            <h1>Kepada Fawwaz</h1>
+            <p class="message">Masukkan tanggal (DDMMYYYY) buat buka pesan ini yaa 🥺</p>
+            <input type="tel" id="pin-input" class="pin-input" placeholder="Contoh: 01012000" maxlength="8">
+            <div id="pin-error" class="error-msg"></div>
+            <div class="buttons-container">
+                <button class="btn-primary" id="btn-unlock">Buka</button>
+            </div>
+        </div>
+
+        <!-- Screen 2: Intro -->
+        <div id="screen-2" class="screen">
+            <div class="gif-container">
+                <img src="https://media.tenor.com/Y6P3kQ-v-B8AAAAi/tkthao219-bubududu.gif" alt="Cute pleading bear">
+            </div>
+            <h1>Halo Awaa...</h1>
+            <p class="message">
+                Aku mau ngomong sesuatu nih sama kamu. Boleh kan? 🥺
+            </p>
+            <div class="buttons-container">
+                <button class="btn-primary" id="btn-next-intro">Lanjut</button>
+            </div>
+        </div>
+
+        <!-- Screen 3: Apology & Runaway Button -->
+        <div id="screen-3" class="screen">
+            <div class="gif-container">
+                <img src="https://media.tenor.com/c6_e2_hM7uUAAAAi/peach-cat-crying.gif" alt="Crying cat">
+            </div>
+            <h1>Aku minta maaf ya...</h1>
+            <p class="message">
+                Aku tau aku salah dan udah bikin kamu risih atau kecewa. <br>
+                Aku takut kehilangan kamu, Harusnya kemarin aku ga gitu:(( <br>
+                Aku tahu kemarin kamu udah maafin aku, tapi Untuk Sekali lagi <br>
+                Maafin aku yaa, ada yang mau aku sampein ke kamu
+            </p>
+            <div class="buttons-container" id="runaway-container">
+                <button class="btn-primary" id="btn-yes">Iya, aku maafin</button>
+                <button class="btn-no" id="btn-no">Nggak mau!</button>
+            </div>
+        </div>
+
+        <!-- Screen 4: Game Intro -->
+        <div id="screen-4" class="screen">
+            <div class="gif-container">
+                <img src="https://media.tenor.com/39QZlWw_XzUAAAAi/tkthao219-bubududu.gif" alt="Bear running">
+            </div>
+            <h1>Yey! Makasih ya Awaa!!</h1>
+            <p class="message">
+                Tapi sebelum baca pesan terakhir dari aku, tangkap 10 hati ini dulu ya sebagai games!
+            </p>
+            <div class="buttons-container">
+                <button class="btn-primary" id="btn-start-game">Mulai Tangkap!</button>
+            </div>
+        </div>
+
+        <!-- Screen 5: Final Apology Letter -->
+        <div id="screen-5" class="screen">
+            <div class="gif-container">
+                <img src="https://media.tenor.com/T0b4_qG2x2MAAAAi/tkthao219-bubududu.gif" alt="Happy jumping bear">
+            </div>
+            <h1>Makasih Sayang! ❤️</h1>
+            <div class="long-letter">
+                <p>Halo cantik,</p><br>
+                <p>Makasih banyak ya udah mau maafin aku dan tetap kasih aku kesempatan. Aku bener-bener nyesel udah bikin kamu risih. Liat kamu kecewa itu hal yang paling bikin aku ngerasa bersalah. Apalagi sampe kamu mau ngejauh dari aku..</p><br>
+                <p>Aku janji bakal belajar dari kesalahan ini dan berusaha jadi versi diriku yang jauh lebih baik lagi buat kamu. Kamu itu terlalu berharga buat aku, dan aku nggak mau kehilangan senyum manis kamu.</p><br>
+                <p>Anyway, Aku pengen nanya. Misalnya dibanding hari kemarin kamu ditanya apakah mau jadi hts.</p>
+                <p>Apakah jawabannya akan sama seperti kemarin??</p> <br>
+                <p>Kalo boleh kamu juga bisa update progress kamu ke aku gimanaa</p>
+                <p>Apalagi kalo risihh, langsung bilang aja</p>
+                <P>GAPAPA SUWERR, sepertinya sekian aja dari pengagum terbesarmu.</P> <br>
+                <p>Terima kasih udah jadi orang yang paling sabar dan selalu kasih kesempatan buat aku. <i>I love you more than words can say.</i> 🥰</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // DOM Elements
+        const screens = [
+            document.getElementById('screen-1'),
+            document.getElementById('screen-2'),
+            document.getElementById('screen-3'),
+            document.getElementById('screen-4'),
+            document.getElementById('screen-5')
+        ];
+        
+        const mainCard = document.getElementById('main-card');
+        const heartsContainer = document.getElementById('hearts-container');
+
+        // Fungsi Transisi Screen Umum
+        function switchScreen(hideIndex, showIndex) {
+            screens[hideIndex].classList.remove('active');
+            setTimeout(() => {
+                screens[hideIndex].style.display = 'none';
+                screens[showIndex].style.display = 'block';
+                void screens[showIndex].offsetWidth; // Trigger reflow
+                screens[showIndex].classList.add('active');
+            }, 500);
+        }
+
+        // === LOGIKA SCREEN 1: PIN ===
+        // GANTI "01012000" DI BAWAH INI DENGAN TANGGAL LAHIR DIA (DDMMYYYY)
+        const CORRECT_PIN = "09072008"; 
+        
+        const btnUnlock = document.getElementById('btn-unlock');
+        const pinInput = document.getElementById('pin-input');
+        const pinError = document.getElementById('pin-error');
+
+        btnUnlock.addEventListener('click', () => {
+            const userInput = pinInput.value.trim();
+            if (userInput === CORRECT_PIN) {
+                pinError.textContent = "";
+                switchScreen(0, 1);
+            } else {
+                pinError.textContent = "Tanggalnya salah hmm 🤨 Coba lagi! Kamu pasti tahu kok";
+                pinInput.value = "";
+                // Animasi getar kecil kalau salah
+                mainCard.style.transform = "translateX(-10px)";
+                setTimeout(() => mainCard.style.transform = "translateX(10px)", 100);
+                setTimeout(() => mainCard.style.transform = "translateX(0)", 200);
+            }
+        });
+
+        // === LOGIKA SCREEN 2: INTRO ===
+        document.getElementById('btn-next-intro').addEventListener('click', () => {
+            switchScreen(1, 2);
+        });
+
+        // === LOGIKA SCREEN 3: TOMBOL KABUR ===
+        const btnYes = document.getElementById('btn-yes');
+        const btnNo = document.getElementById('btn-no');
+
+        const moveButton = () => {
+            btnNo.style.position = 'fixed';
+            
+            // Hitung margin aman agar tidak keluar layar
+            const safeWidth = window.innerWidth - btnNo.clientWidth - 30;
+            const safeHeight = window.innerHeight - btnNo.clientHeight - 30;
+
+            const newX = Math.max(10, Math.floor(Math.random() * safeWidth));
+            const newY = Math.max(10, Math.floor(Math.random() * safeHeight));
+
+            btnNo.style.left = `${newX}px`;
+            btnNo.style.top = `${newY}px`;
+        };
+
+        btnNo.addEventListener('mouseover', moveButton);
+        btnNo.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Mencegah klik di HP
+            moveButton();
+        });
+
+        btnYes.addEventListener('click', () => {
+            btnNo.style.display = 'none'; // Hilangkan tombol "Nggak"
+            switchScreen(2, 3);
+        });
+
+        // === LOGIKA SCREEN 4: MINI GAME TANGKAP HATI ===
+        const btnStartGame = document.getElementById('btn-start-game');
+        const gameArea = document.getElementById('game-area');
+        const scoreDisplay = document.getElementById('score');
+        
+        let score = 0;
+        let gameActive = false;
+        let gameInterval;
+
+        btnStartGame.addEventListener('click', () => {
+            // Sembunyikan card sementara untuk main game
+            mainCard.style.opacity = '0';
+            setTimeout(() => {
+                mainCard.style.display = 'none';
+                gameArea.classList.add('active');
+                startGame();
+            }, 500);
+        });
+
+        function startGame() {
+            score = 0;
+            scoreDisplay.textContent = score;
+            gameActive = true;
+            
+            // Spawn hati setiap 800ms
+            gameInterval = setInterval(spawnGameHeart, 800);
+        }
+
+        function spawnGameHeart() {
+            if (!gameActive) return;
+
+            const heart = document.createElement('div');
+            heart.classList.add('game-heart');
+            heart.innerHTML = '❤️';
+            
+            // Posisi awal acak
+            const startX = Math.random() * (window.innerWidth - 50);
+            const startY = Math.random() * (window.innerHeight - 50);
+            heart.style.left = `${startX}px`;
+            heart.style.top = `${startY}px`;
+
+            // Hapus jika tidak diklik dalam 2 detik
+            const timeoutId = setTimeout(() => {
+                if(heart.parentNode) heart.remove();
+            }, 2000);
+
+            // Jika diklik, tambah score
+            heart.addEventListener('mousedown', (e) => catchHeart(e, heart, timeoutId));
+            heart.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                catchHeart(e, heart, timeoutId);
+            });
+
+            gameArea.appendChild(heart);
+
+            // Gerakkan hati secara acak untuk mempersulit
+            setTimeout(() => {
+                if(!heart.parentNode) return;
+                const newX = Math.random() * (window.innerWidth - 50);
+                const newY = Math.random() * (window.innerHeight - 50);
+                heart.style.transition = 'all 1.5s ease-in-out';
+                heart.style.left = `${newX}px`;
+                heart.style.top = `${newY}px`;
+            }, 50);
+        }
+
+        function catchHeart(e, heart, timeoutId) {
+            if (!gameActive) return;
+            
+            clearTimeout(timeoutId);
+            heart.remove();
+            score++;
+            scoreDisplay.textContent = score;
+
+            // Efek kecil saat hati diklik
+            confetti({
+                particleCount: 15,
+                spread: 40,
+                origin: { 
+                    x: e.clientX / window.innerWidth, 
+                    y: e.clientY / window.innerHeight 
+                },
+                colors: ['#ff6b81', '#ffffff']
+            });
+
+            if (score >= 10) {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(gameInterval);
+            
+            // Bersihkan hati yang tersisa
+            document.querySelectorAll('.game-heart').forEach(h => h.remove());
+            
+            // Tembakkan confetti meriah
+            shootConfetti();
+
+            // Sembunyikan game area, munculkan card Screen 5
+            gameArea.classList.remove('active');
+            
+            // Transisi ke screen 5 secara internal (index 3 ke 4, walau card sedang disembunyikan)
+            screens[3].style.display = 'none';
+            screens[3].classList.remove('active');
+            screens[4].style.display = 'block';
+            screens[4].classList.add('active');
+
+            // Munculkan kembali card
+            mainCard.style.display = 'flex';
+            setTimeout(() => {
+                mainCard.style.opacity = '1';
+                startBackgroundHearts(); // Mulai hujan hati di background
+            }, 100);
+        }
+
+        // === LOGIKA SCREEN 5: FINAL ANIMATIONS ===
+        
+        function shootConfetti() {
+            const duration = 3 * 1000;
+            const animationEnd = Date.now() + duration;
+            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
+
+            function randomInRange(min, max) { return Math.random() * (max - min) + min; }
+
+            const interval = setInterval(function() {
+                const timeLeft = animationEnd - Date.now();
+                if (timeLeft <= 0) return clearInterval(interval);
+                const particleCount = 50 * (timeLeft / duration);
+                
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }, colors: ['#ff6b81', '#ffc0cb', '#ffffff'] }));
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }, colors: ['#ff6b81', '#ffc0cb', '#ffffff'] }));
+            }, 250);
+        }
+
+        function createBackgroundHeart() {
+            const heart = document.createElement('div');
+            heart.classList.add('falling-heart');
+            heart.innerHTML = '❤️';
+            
+            const size = Math.random() * 20 + 10;
+            heart.style.fontSize = `${size}px`;
+            heart.style.left = `${Math.random() * 100}vw`;
+            heart.style.animationDuration = `${Math.random() * 3 + 4}s`; 
+            
+            heartsContainer.appendChild(heart);
+            setTimeout(() => heart.remove(), 7000);
+        }
+
+        let bgHeartInterval;
+        function startBackgroundHearts() {
+            if(!bgHeartInterval) {
+                bgHeartInterval = setInterval(createBackgroundHeart, 300);
+            }
+        }
+    </script>
+</body>
+</html>
